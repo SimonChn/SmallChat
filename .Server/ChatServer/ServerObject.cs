@@ -11,6 +11,8 @@ namespace SmallChatServer
 {
     public class ServerObject
     {
+        private const int port = 8888;
+
         private static ConnectionMultiplexer? databaseConnection;
         private static TcpListener? tcpListener;
         private readonly List<ClientObject> onlineClients = new List<ClientObject>();
@@ -29,7 +31,7 @@ namespace SmallChatServer
             {
                 InitDatabase();
 
-                tcpListener = new TcpListener(IPAddress.Any, 8888);
+                tcpListener = new TcpListener(IPAddress.Any, port);
                 tcpListener.Start();
                 Console.WriteLine("Server started");
 

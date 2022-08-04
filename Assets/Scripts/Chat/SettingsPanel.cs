@@ -1,8 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-
-using System.Globalization;
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,15 +15,56 @@ namespace SmallChat
         [SerializeField] private Button applyButton;
 
         private string nickname = string.Empty;
-        private string color = ColorUtility.ToHtmlStringRGB(Color.white);
+        private string color = "FFFFFF";
         
-        public void Init(Action<ChatSettings> onSetupEnd)
+        public void Init(Action<ChatUserSettings> onSetupEnd)
         {
-            applyButton.onClick.AddListener(() => onSetupEnd(new ChatSettings(nickname, color)));
-            applyButton.onClick.AddListener(() => Destroy(this.gameObject));
+            ChatUserSettings loadedSettings = ChatUserSettings.TryLoad(Application.persistentDataPath);
+
+            if(loadedSettings != null)
+            {
+                nickname = loadedSettings.Nickname;
+                color = loadedSettings.Color;
+
+                nicknameField.text = nickname;
+                colorField.text = color;
+                if (ColorUtility.TryParseHtmlString($"#{color}", out var textColor))
+                {
+                    colorField.textComponent.color = textColor;
+                }
+
+                applyButton.onClick.AddListener(() =>
+                {
+                    if(nickname != loadedSettings.Nickname || color != loadedSettings.Color)
+                    {
+                        var newSettings = new ChatUserSettings(nickname, color, loadedSettings.Id);
+                        newSettings.Save();
+                        onSetupEnd(newSettings);
+                    }
+                    else
+                    {
+                        onSetupEnd(loadedSettings);
+                    }              
+                });
+            }
+            else
+            {
+                applyButton.onClick.AddListener(() => onSetupEnd(new ChatUserSettings(nickname, color)));          
+            }
+
+            applyButton.onClick.AddListener(() => DestroySelf());
 
             nicknameField.onEndEdit.AddListener(UpdateNickname);
             colorField.onEndEdit.AddListener(delegate { UpdateColor(colorField); });
+        }
+
+        private void DestroySelf()
+        {
+            applyButton.onClick.RemoveAllListeners();
+            nicknameField.onEndEdit.RemoveAllListeners();
+            colorField.onEndEdit.RemoveAllListeners();
+
+            Destroy(this.gameObject);
         }
 
         private void UpdateNickname(string newNickname)
@@ -45,11 +82,16 @@ namespace SmallChat
             {
                 color = colorField.text;
             }
-        }
 
+            if(ColorUtility.TryParseHtmlString($"#{colorField.text}", out var textColor))
+            {
+                colorField.textComponent.color = textColor;
+            }
+
+        }
         private bool IsValidColor(string color)
         {
-            if(color.Length > 6)
+            if(color.Length != 6)
             {
                 return false;
             }

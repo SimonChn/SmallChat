@@ -2,9 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using SmallChat.Client;
+
 namespace SmallChat
 {
-    public class MessagesViewController : MonoBehaviour
+    public class MessagesViewController : MonoBehaviour, IServerCommandResultListener
     {
         [Range(1, 40)]
         [SerializeField] private int maxMessages = 20;
@@ -25,10 +27,17 @@ namespace SmallChat
                 viewSimplePool.Enqueue(messageView);
             }
         }
-        
+
+        public void Notify(object data)
+        {
+            string message = MessageParser.GetTextMessageFromObject(data);
+            AddMessage(message);
+        }
+
         public void AddMessage(string message)
         {
             var messageView = viewSimplePool.Dequeue();
+
             viewSimplePool.Enqueue(messageView);
 
             if (!messageView.gameObject.activeSelf)
